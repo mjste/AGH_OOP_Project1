@@ -21,7 +21,7 @@ public class WorldMap {
         this.bounded = bounded;
         initAnimals(width, height);
         initGrass(width, height);
-        animalList = new ArrayList<>();
+        animalList = new LinkedList<>();
     }
 
     public void initAnimals(int width, int height) {
