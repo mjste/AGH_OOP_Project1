@@ -3,19 +3,22 @@ package agh.ics.oop;
 import agh.ics.oop.IPositionChangeObserver;
 import agh.ics.oop.Vector2D;
 
-public class SimulationEngine implements Runnable, IPositionChangeObserver {
+public class SimulationEngine implements Runnable {
+    private WorldMap map;
 
-    public SimulationEngine() {
-
+    public SimulationEngine(WorldMap map) {
+        this.map = map;
     }
 
     @Override
     public void run() {
-
-    }
-
-    @Override
-    public void changePosition(Vector2D oldPosition, Vector2D newPosition) {
-
+        while (true) {
+            map.removeDeadAnimals();
+            map.moveAnimals();
+            map.eatGrass();
+            map.reproduce();
+            map.placeGrass();
+            // powiadom App o zmianach
+        }
     }
 }

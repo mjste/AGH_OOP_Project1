@@ -1,14 +1,19 @@
 package agh.ics.oop;
 
+import javafx.scene.image.Image;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+
 public class Grass{
-    private final Vector2D position;
+    public Image image;
 
-    public Grass(Vector2D position) {
-        this.position = position;
-    }
-
-    public Vector2D getPosition() {
-        return position;
+    public Grass() {
+        try {
+            image = new Image(new FileInputStream(getImagePath()));
+        } catch (FileNotFoundException fe) {
+            System.out.println(fe.getMessage() + " file not found");
+        }
     }
 
     public String getImagePath() {
