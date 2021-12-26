@@ -17,7 +17,7 @@ public class Grass{
     }
 
     public String getImagePath() {
-        return "src/main/resources/agh.ics.oop.Grass.png";
+        return "src/main/resources/Grass.png";
     }
 
     @Override

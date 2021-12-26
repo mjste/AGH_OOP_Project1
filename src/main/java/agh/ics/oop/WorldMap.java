@@ -3,6 +3,7 @@ package agh.ics.oop;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 
 public class WorldMap implements IPositionChangeObserver{
     private List<Animal> animalList;
@@ -13,10 +14,12 @@ public class WorldMap implements IPositionChangeObserver{
     private final Vector2D upperRight;
     private final Vector2D jungleLowerLeft;
     private final Vector2D jungleUpperRight;
+    private final Random random;
     private final boolean bounded;
     private final int moveEnergy;
     private final int plantEnergy;
     private final int reproductionEnergy;
+
 
     public WorldMap(int width, int height, boolean bounded, int moveEnergy, int plantEnergy, int reproductionEnergy, double jungleRatio) {
         this.lowerLeft = new Vector2D(0,0);
@@ -27,6 +30,7 @@ public class WorldMap implements IPositionChangeObserver{
         this.moveEnergy = moveEnergy;
         this.plantEnergy = plantEnergy;
         this.reproductionEnergy = reproductionEnergy;
+        this.random = new Random();
         initAnimals(width, height);
         initGrass(width, height);
 
@@ -35,6 +39,7 @@ public class WorldMap implements IPositionChangeObserver{
         int dy = (int)(1-squaredJungleRatio)*(upperRight.y-lowerLeft.y);
         jungleLowerLeft = new Vector2D(lowerLeft.x+dx, lowerLeft.y+dy);
         jungleUpperRight = new Vector2D(upperRight.x+dx, upperRight.y-dy);
+
 
     }
 
@@ -48,6 +53,7 @@ public class WorldMap implements IPositionChangeObserver{
         this.plantEnergy = 50;
         this.jungleLowerLeft = new Vector2D(10, 10);
         this.jungleUpperRight = new Vector2D(19, 19);
+        this.random = new Random();
     }
 
     public void initAnimals(int width, int height) {
@@ -144,7 +150,48 @@ public class WorldMap implements IPositionChangeObserver{
     }
 
     public void placeGrass() {
-
+        int count = 20;
+        boolean placedInJungle = false;
+        boolean placedOutside = false;
+        while (count > 0 && !(placedInJungle && placedOutside)) {
+            int x = random.nextInt(upperRight.x - lowerLeft.x) + lowerLeft.x;
+            int y = random.nextInt(upperRight.y - lowerLeft.y) + lowerLeft.y;
+            if (!grassMap[x][y] && animals[x][y].size() == 0) {
+                Vector2D position = new Vector2D(x, y);
+                if (position.precedes(jungleUpperRight) && position.follows(jungleUpperRight)) {
+                    if (!placedInJungle) {
+                        placedInJungle = true;
+                        grassMap[x][y] = true;
+                    }
+                } else {
+                    if (!placedOutside) {
+                        placedOutside = true;
+                        grassMap[x][y] = true;
+                    }
+                }
+            }
+            count--;
+        }
+        for (int x = lowerLeft.x; x <= upperRight.x && !placedOutside; x++) {
+            for (int y = lowerLeft.y; y <= upperRight.y && !placedOutside; y++) {
+                if (!grassMap[x][y] && animals[x][y].size() == 0) {
+                    Vector2D position = new Vector2D(x, y);
+                    if (!(position.precedes(jungleUpperRight) && position.follows(jungleLowerLeft))) {
+                        placedOutside = true;
+                        grassMap[x][y] = true;
+                    }
+                }
+            }
+        }
+        for (int x = jungleLowerLeft.x; x <= jungleUpperRight.x && !placedInJungle; x++) {
+            for (int y = jungleLowerLeft.y; y <= jungleUpperRight.y && !placedInJungle; y++) {
+                Vector2D position = new Vector2D(x, y);
+                if (!grassMap[x][y] && animals[x][y].size() == 0) {
+                    placedInJungle = true;
+                    grassMap[x][y] = true;
+                }
+            }
+        }
     }
 
     public void reproduce() {

@@ -1,5 +1,6 @@
 package agh.ics.oop.GUI;
 
+import agh.ics.oop.SimulationEngine;
 import agh.ics.oop.WorldMap;
 import javafx.application.Application;
 import javafx.geometry.HPos;
@@ -15,15 +16,21 @@ import javafx.stage.Stage;
 
 public class App extends Application {
     private WorldMap boundedWorldMap;
-    private WorldMap unBoundedWorldMap;
+    private WorldMap unboundedWorldMap;
+    private SimulationEngine boundedEngine;
+    private SimulationEngine unboundedEngine;
     private Scene scene1;
     private Scene scene2;
     private Stage stage;
+    private GridPane boundedGrid;
+    private GridPane unboundedGrid;
 
     private int width;
     private int height;
     private int startEnergy;
     private int moveEnergy;
+    private int plantEnergy;
+    private int reproductionEnergy;
     private int delay;
     private double jungleRatio;
     private int startAnimalsNumber;
@@ -31,6 +38,8 @@ public class App extends Application {
     private TextField heightTextField;
     private TextField startEnergyTextField;
     private TextField moveEnergyTextField;
+    private TextField plantEnergyTextField;
+    private TextField reproductionEnergyTextField;
     private TextField jungleRatioTextField;
     private TextField delayTextField;
     private TextField startAnimalsNumberTextField;
@@ -38,18 +47,13 @@ public class App extends Application {
 
 
     @Override
-    public void start(Stage primaryStage) throws Exception {
+    public void start(Stage primaryStage) {
         stage = primaryStage;
         makeScene1();
 
         stage.setScene(scene1);
         stage.setTitle("Set parameters");
         stage.show();
-    }
-
-    @Override
-    public void init() throws Exception {
-        super.init();
     }
 
     void makeScene1() {
@@ -89,6 +93,19 @@ public class App extends Application {
         scene1Grid.add(moveEnergyLabel, 1, row);
         scene1Grid.add(moveEnergyTextField, 2, row);
         row += 1;
+
+        Label plantEnergyLabel = new Label("Plant Energy");
+        plantEnergyTextField = new TextField("50");
+        scene1Grid.add(plantEnergyLabel, 1, row);
+        scene1Grid.add(plantEnergyTextField, 2, row);
+        row += 1;
+
+        Label reproductionEnergyLabel = new Label("Reproduction energy");
+        reproductionEnergyTextField = new TextField("30");
+        scene1Grid.add(reproductionEnergyLabel, 1, row);
+        scene1Grid.add(reproductionEnergyTextField, 2, row);
+        row += 1;
+
 
         Label jungleRatioLabel = new Label("Jungle Ratio");
         jungleRatioTextField = new TextField("0.3");
@@ -139,10 +156,14 @@ public class App extends Application {
         grid.getRowConstraints().add(new RowConstraints(270));
         grid.setGridLinesVisible(true);
 
-        GridPane unboundedMapGrid = new GridPane();
-        GridPane boundedMapGrid = new GridPane();
-        grid.add(unboundedMapGrid, 0, 0);
-        grid.add(boundedMapGrid, 1, 0);
+        unboundedGrid = new GridPane();
+        boundedGrid = new GridPane();
+        grid.add(unboundedGrid, 0, 0);
+        grid.add(boundedGrid, 1, 0);
+        unboundedWorldMap = new WorldMap(width, height, false, moveEnergy, plantEnergy, reproductionEnergy, jungleRatio);
+        boundedWorldMap = new WorldMap(width, height, true, moveEnergy, plantEnergy, reproductionEnergy, jungleRatio);
+        boundedEngine = new SimulationEngine(this, boundedWorldMap);
+        unboundedEngine = new SimulationEngine(this, unboundedWorldMap);
     }
 
     public void submitButtonAction() {
@@ -151,6 +172,8 @@ public class App extends Application {
             this.width = Integer.parseInt(this.widthTextField.getText());
             this.startEnergy = Integer.parseInt(this.startEnergyTextField.getText());
             this.moveEnergy = Integer.parseInt(this.moveEnergyTextField.getText());
+            this.plantEnergy = Integer.parseInt(this.plantEnergyTextField.getText());
+            this.reproductionEnergy = Integer.parseInt(this.reproductionEnergyTextField.getText());
             this.jungleRatio = Double.parseDouble(this.jungleRatioTextField.getText());
             this.delay = Integer.parseInt(this.delayTextField.getText());
             this.startAnimalsNumber = Integer.parseInt(this.startAnimalsNumberTextField.getText());
@@ -160,20 +183,22 @@ public class App extends Application {
                     width <= 0 ||
                     startEnergy <= 0 ||
                     moveEnergy <= 0 ||
+                    plantEnergy <= 0 ||
+                    reproductionEnergy <= 0 ||
                     jungleRatio <= 0 ||
                     jungleRatio > 1 ||
                     delay <= 0 ||
                     startAnimalsNumber <= 0)
                 throw new IllegalArgumentException();
 
+            makeScene2();
+            stage.setScene(scene2);
+
         } catch (NumberFormatException e) {
             System.out.println("submitButtonAction: "+e.getMessage());
             errorLabel.setText("Your input is invalid. Please try again.");
         } catch (IllegalArgumentException e) {
-            errorLabel.setText("Your argument is illegal. Consider positive values.");
+            errorLabel.setText("Your argument is illegal. Check for negative values or ranges.");
         }
-
-        makeScene2();
-        stage.setScene(scene2);
     }
 }

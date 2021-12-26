@@ -1,13 +1,14 @@
 package agh.ics.oop;
 
-import agh.ics.oop.IPositionChangeObserver;
-import agh.ics.oop.Vector2D;
+import agh.ics.oop.GUI.App;
 
 public class SimulationEngine implements Runnable {
-    private WorldMap map;
+    private final WorldMap map;
+    private final App app;
 
-    public SimulationEngine(WorldMap map) {
+    public SimulationEngine(App app, WorldMap map) {
         this.map = map;
+        this.app = app;
     }
 
     @Override
@@ -18,7 +19,7 @@ public class SimulationEngine implements Runnable {
             map.eatGrass();
             map.reproduce();
             map.placeGrass();
-            // powiadom App o zmianach
+            // powiadom apkę o nowym renderze
         }
     }
 }
