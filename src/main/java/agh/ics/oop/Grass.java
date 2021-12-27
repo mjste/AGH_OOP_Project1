@@ -5,7 +5,7 @@ import javafx.scene.image.Image;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
-public class Grass{
+public class Grass implements IWorldMapElement{
     public Image image;
 
     public Grass() {
@@ -18,6 +18,10 @@ public class Grass{
 
     public String getImagePath() {
         return "src/main/resources/Grass.png";
+    }
+
+    public Image getImage() {
+        return image;
     }
 
     @Override

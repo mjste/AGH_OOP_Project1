@@ -1,8 +1,12 @@
 package agh.ics.oop;
 
+import javafx.scene.image.Image;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.Random;
 
-public class Animal{
+public class Animal implements IWorldMapElement{
     private Vector2D position;
     private MapDirection mapDirection;
     private final WorldMap map;
@@ -43,6 +47,11 @@ public class Animal{
         return "src/main/resources/"+mapDirection.toString()+".png";
     }
 
+    @Override
+    public Image getImage() throws FileNotFoundException{
+        return new Image(new FileInputStream(getImagePath()));
+    }
+
     public void move() {
         Vector2D oldPosition = this.getPosition();
         int mapDirectionChange = random.nextInt(8);
@@ -51,6 +60,9 @@ public class Animal{
             Vector2D dPosition = MapDirection.toUnitVector(mapDirection);
             Vector2D newPosition = oldPosition.add(dPosition);
             if (map.canMoveTo(newPosition)) {
+                if (!map.inBoundaries(newPosition)) {
+                    newPosition = map.normalizePosition(newPosition);
+                }
                 this.position = newPosition;
                 map.changePosition(this, oldPosition, newPosition);
             }

@@ -1,8 +1,9 @@
 package agh.ics.oop;
 
-import agh.ics.oop.Vector2D;
+import javafx.scene.image.Image;
+
+import java.io.FileNotFoundException;
 
 public interface IWorldMapElement {
-    public Vector2D getPosition();
-    public String getImagePath();
+    Image getImage() throws FileNotFoundException;
 }

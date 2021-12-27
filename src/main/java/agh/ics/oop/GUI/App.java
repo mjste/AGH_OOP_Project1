@@ -1,9 +1,10 @@
 package agh.ics.oop.GUI;
 
-import agh.ics.oop.SimulationEngine;
-import agh.ics.oop.WorldMap;
+import agh.ics.oop.*;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.HPos;
+import javafx.geometry.VPos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -19,12 +20,16 @@ public class App extends Application {
     private WorldMap unboundedWorldMap;
     private SimulationEngine boundedEngine;
     private SimulationEngine unboundedEngine;
+    private Thread boundedThread;
+    private Thread unboundedThread;
     private Scene scene1;
     private Scene scene2;
     private Stage stage;
     private GridPane boundedGrid;
     private GridPane unboundedGrid;
 
+    private int scene2Width;
+    private int scene2Height;
     private int width;
     private int height;
     private int startEnergy;
@@ -32,8 +37,10 @@ public class App extends Application {
     private int plantEnergy;
     private int reproductionEnergy;
     private int delay;
-    private double jungleRatio;
     private int startAnimalsNumber;
+    private double jungleRatio;
+    private double elemBoxWidth;
+    private double elemBoxHeight;
     private TextField widthTextField;
     private TextField heightTextField;
     private TextField startEnergyTextField;
@@ -70,14 +77,14 @@ public class App extends Application {
 
         int row = 0;
         Label widthLabel = new Label("Width");
-        widthTextField = new TextField("30");
+        widthTextField = new TextField("15");
         scene1Grid.add(widthLabel, 1, row);
         scene1Grid.add(widthTextField, 2, row);
         row += 1;
 
 
         Label heightLabel = new Label("Height");
-        heightTextField = new TextField("30");
+        heightTextField = new TextField("15");
         scene1Grid.add(heightLabel, 1, row);
         scene1Grid.add(heightTextField, 2, row);
         row += 1;
@@ -148,22 +155,148 @@ public class App extends Application {
 
     void makeScene2() {
         GridPane grid = new GridPane();
-        scene2 = new Scene(grid, 1280, 720);
+        scene2Width = 1280;
+        scene2Height = 720;
+        scene2 = new Scene(grid, scene2Width, scene2Height);
 
-        grid.getColumnConstraints().add(new ColumnConstraints(900));
-        grid.getColumnConstraints().add(new ColumnConstraints(380));
-        grid.getRowConstraints().add(new RowConstraints(450));
-        grid.getRowConstraints().add(new RowConstraints(270));
+        int mapGridWidth = 450;
+        int mapGridHeight = 450;
+
+        grid.getColumnConstraints().add(new ColumnConstraints(2*mapGridWidth));
+        grid.getColumnConstraints().add(new ColumnConstraints(scene2Width-2*mapGridWidth));
+        grid.getRowConstraints().add(new RowConstraints(mapGridHeight));
+        grid.getRowConstraints().add(new RowConstraints(scene2Height-mapGridHeight));
         grid.setGridLinesVisible(true);
+
+        GridPane mapsGrid = new GridPane();
+        grid.add(mapsGrid, 0, 0);
+        mapsGrid.getColumnConstraints().add(new ColumnConstraints(450));
+        mapsGrid.getColumnConstraints().add(new ColumnConstraints(450));
+        mapsGrid.getRowConstraints().add(new RowConstraints(450));
+        mapsGrid.setGridLinesVisible(true);
 
         unboundedGrid = new GridPane();
         boundedGrid = new GridPane();
-        grid.add(unboundedGrid, 0, 0);
-        grid.add(boundedGrid, 1, 0);
+        mapsGrid.add(unboundedGrid, 0, 0);
+        mapsGrid.add(boundedGrid, 1, 0);
+
+        elemBoxWidth = ((double) mapGridWidth)/((double) width);
+        elemBoxHeight = ((double) mapGridHeight)/((double) height);
+        setMapGridsConstraints();
+
+        unboundedGrid.setGridLinesVisible(true);
+        boundedGrid.setGridLinesVisible(true);
+
+        initWorldMapsAndEngines();
+
+        refreshGrid(MapType.UNBOUNDED);
+        refreshGrid(MapType.BOUNDED);
+
+        makeBottomButtons(grid, mapGridWidth, mapGridHeight);
+    }
+
+    void setMapGridsConstraints() {
+        for (int i = 0; i < height; i++) {
+            unboundedGrid.getRowConstraints().add(new RowConstraints(elemBoxHeight));
+            boundedGrid.getRowConstraints().add(new RowConstraints(elemBoxHeight));
+        }
+        for(int i = 0; i < width; i++) {
+            unboundedGrid.getColumnConstraints().add(new ColumnConstraints(elemBoxWidth));
+            boundedGrid.getColumnConstraints().add(new ColumnConstraints(elemBoxWidth));
+        }
+    }
+
+    void initWorldMapsAndEngines(){
         unboundedWorldMap = new WorldMap(width, height, false, moveEnergy, plantEnergy, reproductionEnergy, jungleRatio);
+        unboundedWorldMap.makeInitialAnimals(startAnimalsNumber, startEnergy);
+        unboundedEngine = new SimulationEngine(this, unboundedWorldMap, delay);
+        unboundedThread = new Thread(unboundedEngine);
+
         boundedWorldMap = new WorldMap(width, height, true, moveEnergy, plantEnergy, reproductionEnergy, jungleRatio);
-        boundedEngine = new SimulationEngine(this, boundedWorldMap);
-        unboundedEngine = new SimulationEngine(this, unboundedWorldMap);
+        boundedWorldMap.makeInitialAnimals(startAnimalsNumber, startEnergy);
+        boundedEngine = new SimulationEngine(this, boundedWorldMap, delay);
+        boundedThread = new Thread(boundedEngine);
+    }
+
+    void refreshGrid(MapType type) {
+        GridPane grid;
+        WorldMap map;
+        if (type == MapType.BOUNDED) {
+            grid = boundedGrid;
+            map = boundedWorldMap;
+        }
+        else {
+            grid = unboundedGrid;
+            map = unboundedWorldMap;
+        }
+
+        grid.getChildren().clear();
+        grid.setGridLinesVisible(false);
+        grid.setGridLinesVisible(true);
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                int x = i;
+                int y = height-j-1;
+                IWorldMapElement elem = map.objectAt(new Vector2D(x, y));
+                if (elem != null) {
+                    GUIElemBox guiElemBox = new GUIElemBox(elem, elemBoxWidth, elemBoxHeight);
+                    grid.add(guiElemBox.getPane(), i, j);
+                }
+            }
+        }
+    }
+
+    void makeBottomButtons(GridPane grid, int mapGridWidth, int mapGridHeight) {
+        GridPane buttonsGrid = new GridPane();
+        grid.add(buttonsGrid, 0, 1);
+        for (int i = 0; i < 4; i++) {
+            buttonsGrid.getColumnConstraints().add(new ColumnConstraints((double) 2*mapGridWidth/4));
+        }
+        for (int i = 0; i < 2; i++) {
+            buttonsGrid.getRowConstraints().add(new RowConstraints((double) (scene2Height-mapGridHeight)/2));
+        }
+
+        Button unboundedStartButton = new Button("Start");
+        unboundedStartButton.setOnAction(event -> startUnboundedButtonAction());
+        buttonsGrid.add(unboundedStartButton, 0, 0);
+        GridPane.setHalignment(unboundedStartButton, HPos.CENTER);
+        GridPane.setValignment(unboundedStartButton, VPos.CENTER);
+
+        Button unboundedPauseButton = new Button("Pause");
+        unboundedPauseButton.setOnAction(event -> pauseUnboundedButtonAction());
+        buttonsGrid.add(unboundedPauseButton, 1, 0);
+        GridPane.setHalignment(unboundedPauseButton, HPos.CENTER);
+        GridPane.setValignment(unboundedPauseButton, VPos.CENTER);
+
+        Button boundedStartButton = new Button("Start");
+        boundedStartButton.setOnAction(event -> startBoundedButtonAction());
+        buttonsGrid.add(boundedStartButton, 2, 0);
+        GridPane.setHalignment(boundedStartButton, HPos.CENTER);
+        GridPane.setValignment(boundedStartButton, VPos.CENTER);
+
+        Button boundedPauseButton = new Button("Pause");
+        boundedPauseButton.setOnAction(event -> pauseBoundedButtonAction());
+        buttonsGrid.add(boundedPauseButton, 3, 0);
+        GridPane.setHalignment(boundedPauseButton, HPos.CENTER);
+        GridPane.setValignment(boundedPauseButton, VPos.CENTER);
+
+        Button allStartButton = new Button("Start all");
+        allStartButton.setOnAction(event -> {allStartButtonAction();});
+        buttonsGrid.add(allStartButton, 1, 1);
+        GridPane.setHalignment(allStartButton, HPos.CENTER);
+        GridPane.setValignment(allStartButton, VPos.CENTER);
+
+        Button allPauseButton = new Button("Pause all");
+        allPauseButton.setOnAction(event -> {allPauseButtonAction();});
+        buttonsGrid.add(allPauseButton, 2, 1);
+        GridPane.setHalignment(allPauseButton, HPos.CENTER);
+        GridPane.setValignment(allPauseButton, VPos.CENTER);
+
+        Button setParametersButton = new Button("Set Parameters");
+        setParametersButton.setOnAction(event -> setParametersButtonAction());
+        buttonsGrid.add(setParametersButton, 3, 1);
+        GridPane.setHalignment(setParametersButton, HPos.CENTER);
+        GridPane.setValignment(setParametersButton, VPos.CENTER);
     }
 
     public void submitButtonAction() {
@@ -201,4 +334,45 @@ public class App extends Application {
             errorLabel.setText("Your argument is illegal. Check for negative values or ranges.");
         }
     }
+
+    public void startUnboundedButtonAction() {
+        switch (unboundedThread.getState()) {
+            case NEW -> unboundedThread.start();
+            case WAITING -> unboundedThread.notify();
+        }
+    }
+
+    public void startBoundedButtonAction() {
+        switch (boundedThread.getState()) {
+            case NEW -> boundedThread.start();
+            case WAITING -> unboundedThread.notify();
+        }
+    }
+
+    public void pauseUnboundedButtonAction() {
+    }
+
+    public void pauseBoundedButtonAction() {
+    }
+
+    public void allStartButtonAction() {
+        startBoundedButtonAction();
+        startUnboundedButtonAction();
+    }
+
+    public void allPauseButtonAction() {
+        pauseBoundedButtonAction();
+        pauseUnboundedButtonAction();
+    }
+
+    public void setParametersButtonAction() {
+        stage.setScene(scene1);
+    }
+
+    public void update(MapType type) {
+        Platform.runLater(() -> {
+            refreshGrid(type);
+        });
+    }
+
 }

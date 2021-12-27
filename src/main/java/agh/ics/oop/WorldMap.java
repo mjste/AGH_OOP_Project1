@@ -67,6 +67,11 @@ public class WorldMap implements IPositionChangeObserver{
 
     public void initGrass(int width, int height) {
         grassMap = new Boolean[width][height];
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                grassMap[i][j] = false;
+            }
+        }
     }
 
     public boolean isBounded() {
@@ -78,6 +83,14 @@ public class WorldMap implements IPositionChangeObserver{
             return position.precedes(upperRight) && position.follows(lowerLeft);
         } else {
               return true;
+        }
+    }
+
+    public void makeInitialAnimals(int numberOfAnimals, int startEnergy) {
+        for (int i = 0; i < numberOfAnimals; i++) {
+            Vector2D position = new Vector2D(random.nextInt(upperRight.x- lowerLeft.x), random.nextInt(upperRight.y- lowerLeft.y));
+            Animal animal = new Animal(this, position, startEnergy);
+            placeAnimal(animal);
         }
     }
 
@@ -124,7 +137,9 @@ public class WorldMap implements IPositionChangeObserver{
     public void moveAnimals(){
         for (Animal animal : animalList) {
             animal.move();
+            animal.changeEnergy(-moveEnergy);
         }
+
     }
 
     public void eatGrass() {
@@ -150,7 +165,7 @@ public class WorldMap implements IPositionChangeObserver{
     }
 
     public void placeGrass() {
-        int count = 20;
+        int count = 100;
         boolean placedInJungle = false;
         boolean placedOutside = false;
         while (count > 0 && !(placedInJungle && placedOutside)) {
@@ -185,7 +200,6 @@ public class WorldMap implements IPositionChangeObserver{
         }
         for (int x = jungleLowerLeft.x; x <= jungleUpperRight.x && !placedInJungle; x++) {
             for (int y = jungleLowerLeft.y; y <= jungleUpperRight.y && !placedInJungle; y++) {
-                Vector2D position = new Vector2D(x, y);
                 if (!grassMap[x][y] && animals[x][y].size() == 0) {
                     placedInJungle = true;
                     grassMap[x][y] = true;
@@ -234,7 +248,7 @@ public class WorldMap implements IPositionChangeObserver{
         }
     }
 
-    public Object objectAt(Vector2D position) {
+    public IWorldMapElement objectAt(Vector2D position) {
         int x = position.x;
         int y = position.y;
 
@@ -251,5 +265,20 @@ public class WorldMap implements IPositionChangeObserver{
             return grass;
         }
         return null;
+    }
+
+    public boolean inBoundaries(Vector2D position) {
+        return position.follows(lowerLeft) && position.precedes(upperRight);
+    }
+
+    public Vector2D[] getBoundaries() {
+        return new Vector2D[]{lowerLeft, upperRight};
+    }
+    public Vector2D normalizePosition(Vector2D position) {
+        int x = position.x;
+        int y = position.y;
+        int width = upperRight.x- lowerLeft.x+1;
+        int height = upperRight.y - lowerLeft.y+1;
+        return new Vector2D((x+width)%width, (y+height)%height);
     }
 }
