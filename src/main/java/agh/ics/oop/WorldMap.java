@@ -23,6 +23,8 @@ public class WorldMap implements IPositionChangeObserver{
     private final int reproductionEnergy;
 
     private int plantsCount;
+    private int totalDeadCount;
+    private int totalDeadLifespan;
     private final Map<Genome, Integer> genomeMap;
 
 
@@ -165,6 +167,9 @@ public class WorldMap implements IPositionChangeObserver{
             int x = pos.x;
             int y = pos.y;
             animals[x][y].remove(animal);
+
+            totalDeadCount++;
+            totalDeadLifespan += animal.getDays();
 
             Integer genomeCount = genomeMap.get(animal.getGenome());
             genomeMap.remove(animal.getGenome());
@@ -333,5 +338,32 @@ public class WorldMap implements IPositionChangeObserver{
 
     public Map<Genome, Integer> getGenomeMap() {
         return genomeMap;
+    }
+
+    public double getAverageEnergy () {
+        int totalEnergy = 0;
+        for (Animal animal : animalList) {
+            totalEnergy += animal.getEnergy();
+        }
+        if (animalList.size() != 0) return (double)totalEnergy/animalList.size();
+        return 0;
+    }
+
+    public int getPlantsCount() {
+        return plantsCount;
+    }
+
+    public double getAverageLifespan () {
+        if (totalDeadCount != 0) return (double)totalDeadLifespan/totalDeadCount;
+        return 0;
+    }
+
+    public double getAverageChildren () {
+        int totalChildren = 0;
+        for (Animal animal : animalList) {
+            totalChildren += animal.getChildrenCount();
+        }
+        if (animalList.size() != 0) return (double) totalChildren/animalList.size();
+        return 0;
     }
 }
