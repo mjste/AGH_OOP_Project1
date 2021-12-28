@@ -1,11 +1,13 @@
 package agh.ics.oop;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
+import javafx.scene.image.Image;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.util.*;
 
 public class WorldMap implements IPositionChangeObserver{
+    private Image[] images;
     private List<Animal> animalList;
     private LinkedList<Animal>[][] animals;
     private Boolean[][] grassMap;
@@ -20,8 +22,12 @@ public class WorldMap implements IPositionChangeObserver{
     private final int plantEnergy;
     private final int reproductionEnergy;
 
+    private int plantsCount;
+    private final Map<Genome, Integer> genomeMap;
+
 
     public WorldMap(int width, int height, boolean bounded, int moveEnergy, int plantEnergy, int reproductionEnergy, double jungleRatio) {
+        this.images = new Image[8];
         this.lowerLeft = new Vector2D(0,0);
         this.upperRight = new Vector2D(width-1, height-1);
         this.bounded = bounded;
@@ -33,14 +39,15 @@ public class WorldMap implements IPositionChangeObserver{
         this.random = new Random();
         initAnimals(width, height);
         initGrass(width, height);
+        initImages();
 
-        double squaredJungleRatio = Math.sqrt(jungleRatio)/2;
-        int dx = (int)(1-squaredJungleRatio)*(upperRight.x-lowerLeft.x);
-        int dy = (int)(1-squaredJungleRatio)*(upperRight.y-lowerLeft.y);
+        double squaredJungleRatio = Math.sqrt(jungleRatio);
+        int dx = (int)((1-squaredJungleRatio)*(width));
+        int dy = (int)((1-squaredJungleRatio)*(height));
         jungleLowerLeft = new Vector2D(lowerLeft.x+dx, lowerLeft.y+dy);
-        jungleUpperRight = new Vector2D(upperRight.x+dx, upperRight.y-dy);
-
-
+        jungleUpperRight = new Vector2D(upperRight.x-dx, upperRight.y-dy);
+        this.plantsCount = 0;
+        this.genomeMap = new HashMap<>();
     }
 
     public WorldMap() {
@@ -54,6 +61,11 @@ public class WorldMap implements IPositionChangeObserver{
         this.jungleLowerLeft = new Vector2D(10, 10);
         this.jungleUpperRight = new Vector2D(19, 19);
         this.random = new Random();
+        initGrass(30, 30);
+        initAnimals(30, 30);
+        initImages();
+        this.plantsCount = 0;
+        this.genomeMap = new HashMap<>();
     }
 
     public void initAnimals(int width, int height) {
@@ -74,6 +86,22 @@ public class WorldMap implements IPositionChangeObserver{
         }
     }
 
+    public void initImages() {
+        images = new Image[8];
+        try {
+            images[0] = new Image(new FileInputStream("src/main/resources/N.png"));
+            images[1] = new Image(new FileInputStream("src/main/resources/NE.png"));
+            images[2] = new Image(new FileInputStream("src/main/resources/E.png"));
+            images[3] = new Image(new FileInputStream("src/main/resources/SE.png"));
+            images[4] = new Image(new FileInputStream("src/main/resources/S.png"));
+            images[5] = new Image(new FileInputStream("src/main/resources/SW.png"));
+            images[6] = new Image(new FileInputStream("src/main/resources/W.png"));
+            images[7] = new Image(new FileInputStream("src/main/resources/NW.png"));
+        } catch (FileNotFoundException ex) {
+            System.out.println(ex.getMessage());
+        }
+    }
+
     public boolean isBounded() {
         return bounded;
     }
@@ -88,7 +116,10 @@ public class WorldMap implements IPositionChangeObserver{
 
     public void makeInitialAnimals(int numberOfAnimals, int startEnergy) {
         for (int i = 0; i < numberOfAnimals; i++) {
-            Vector2D position = new Vector2D(random.nextInt(upperRight.x- lowerLeft.x), random.nextInt(upperRight.y- lowerLeft.y));
+            Vector2D position = new Vector2D(random.nextInt(upperRight.x- lowerLeft.x+1), random.nextInt(upperRight.y- lowerLeft.y+1));
+            while (animals[position.x][position.y].size() > 0) {
+                position = new Vector2D(random.nextInt(upperRight.x- lowerLeft.x+1), random.nextInt(upperRight.y- lowerLeft.y+1));
+            }
             Animal animal = new Animal(this, position, startEnergy);
             placeAnimal(animal);
         }
@@ -98,6 +129,15 @@ public class WorldMap implements IPositionChangeObserver{
         Vector2D animalPosition = animal.getPosition();
         animals[animalPosition.x][animalPosition.y].add(animal);
         animalList.add(animal);
+
+        Genome genome = animal.getGenome();
+        Integer genomeCount = genomeMap.get(genome);
+        if (genomeCount == null) {
+            genomeMap.put(genome, 1);
+        } else {
+            genomeMap.remove(genome);
+            genomeMap.put(genome, genomeCount+1);
+        }
     }
 
     public boolean isOccupied(Vector2D position) {
@@ -125,6 +165,10 @@ public class WorldMap implements IPositionChangeObserver{
             int x = pos.x;
             int y = pos.y;
             animals[x][y].remove(animal);
+
+            Integer genomeCount = genomeMap.get(animal.getGenome());
+            genomeMap.remove(animal.getGenome());
+            if (genomeCount > 1) genomeMap.put(animal.getGenome(), genomeCount - 1);
         }
     }
 
@@ -146,12 +190,14 @@ public class WorldMap implements IPositionChangeObserver{
         for (int i = 0; i < upperRight.x; i++) {
             for (int j = 0; j < upperRight.y; j++) {
                 if (grassMap[i][j] && animals[i][j].size() > 0) {
+                    plantsCount--;
                     grassMap[i][j] = false;
                     int maxEnergy = 0;
                     for (Animal animal : animals[i][j]) {
                         if (animal.getEnergy() > maxEnergy) maxEnergy = animal.getEnergy();
                     }
-                    List<Animal> strongestAnimals = new ArrayList();
+                    ArrayList<Animal> strongestAnimals;
+                    strongestAnimals = new ArrayList<Animal>();
                     for (Animal animal : animals[i][j]) {
                         if (animal.getEnergy() == maxEnergy) strongestAnimals.add(animal);
                     }
@@ -165,46 +211,41 @@ public class WorldMap implements IPositionChangeObserver{
     }
 
     public void placeGrass() {
-        int count = 100;
-        boolean placedInJungle = false;
-        boolean placedOutside = false;
-        while (count > 0 && !(placedInJungle && placedOutside)) {
-            int x = random.nextInt(upperRight.x - lowerLeft.x) + lowerLeft.x;
-            int y = random.nextInt(upperRight.y - lowerLeft.y) + lowerLeft.y;
-            if (!grassMap[x][y] && animals[x][y].size() == 0) {
-                Vector2D position = new Vector2D(x, y);
-                if (position.precedes(jungleUpperRight) && position.follows(jungleUpperRight)) {
-                    if (!placedInJungle) {
-                        placedInJungle = true;
-                        grassMap[x][y] = true;
-                    }
-                } else {
-                    if (!placedOutside) {
-                        placedOutside = true;
-                        grassMap[x][y] = true;
-                    }
-                }
-            }
+        placeGrassInJungle();
+        placeGrassOutsideJungle();
+    }
+
+    private void placeGrassInJungle() {
+        int jungleWidth = jungleUpperRight.x - jungleLowerLeft.x + 1;
+        int jungleHeight = jungleUpperRight.y - jungleLowerLeft.y + 1;
+        int x;
+        int y;
+        int count = jungleHeight*jungleWidth*4;
+        do {
+            x = random.nextInt(jungleWidth) + jungleLowerLeft.x;
+            y = random.nextInt(jungleHeight) + jungleLowerLeft.y;
             count--;
+        } while (count > 0 && (animals[x][y].size() > 0 || grassMap[x][y]));
+        if (animals[x][y].size() == 0 && !grassMap[x][y]) {
+            grassMap[x][y] = true;
+            plantsCount++;
         }
-        for (int x = lowerLeft.x; x <= upperRight.x && !placedOutside; x++) {
-            for (int y = lowerLeft.y; y <= upperRight.y && !placedOutside; y++) {
-                if (!grassMap[x][y] && animals[x][y].size() == 0) {
-                    Vector2D position = new Vector2D(x, y);
-                    if (!(position.precedes(jungleUpperRight) && position.follows(jungleLowerLeft))) {
-                        placedOutside = true;
-                        grassMap[x][y] = true;
-                    }
-                }
-            }
-        }
-        for (int x = jungleLowerLeft.x; x <= jungleUpperRight.x && !placedInJungle; x++) {
-            for (int y = jungleLowerLeft.y; y <= jungleUpperRight.y && !placedInJungle; y++) {
-                if (!grassMap[x][y] && animals[x][y].size() == 0) {
-                    placedInJungle = true;
-                    grassMap[x][y] = true;
-                }
-            }
+    }
+
+    private void placeGrassOutsideJungle() {
+        int width = upperRight.x - lowerLeft.x + 1;
+        int height = upperRight.y - lowerLeft.y + 1;
+        int x;
+        int y;
+        int count = height*width*4;
+        do {
+            x = random.nextInt(width)+ lowerLeft.x;
+            y = random.nextInt(height)+ lowerLeft.y;
+            count--;
+        } while (count > 0 && (animals[x][y].size() > 0 || grassMap[x][y] || inJungle(new Vector2D(x, y))));
+        if (animals[x][y].size() == 0 && !grassMap[x][y] && !inJungle(new Vector2D(x, y))) {
+            grassMap[x][y] = true;
+            plantsCount++;
         }
     }
 
@@ -240,8 +281,11 @@ public class WorldMap implements IPositionChangeObserver{
                         for (int i = limit; i < 32; i++) {
                             genes[i] = genes2[i];
                         }
+                        Arrays.sort(genes);
                         Animal child = new Animal(this, new Vector2D(x, y), dE1+dE2, genes);
                         placeAnimal(child);
+                        strongestAnimal1.incrementChildrenCount();
+                        strongestAnimal2.incrementChildrenCount();
                     }
                 }
             }
@@ -271,14 +315,23 @@ public class WorldMap implements IPositionChangeObserver{
         return position.follows(lowerLeft) && position.precedes(upperRight);
     }
 
-    public Vector2D[] getBoundaries() {
-        return new Vector2D[]{lowerLeft, upperRight};
+    private boolean inJungle(Vector2D position) {
+        return position.follows(jungleLowerLeft) && position.precedes(jungleUpperRight);
     }
+
     public Vector2D normalizePosition(Vector2D position) {
         int x = position.x;
         int y = position.y;
         int width = upperRight.x- lowerLeft.x+1;
         int height = upperRight.y - lowerLeft.y+1;
         return new Vector2D((x+width)%width, (y+height)%height);
+    }
+
+    public Image getAnimalImage (MapDirection mapDirection) {
+        return images[mapDirection.ordinal()];
+    }
+
+    public Map<Genome, Integer> getGenomeMap() {
+        return genomeMap;
     }
 }

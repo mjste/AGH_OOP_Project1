@@ -56,6 +56,11 @@ public class App extends Application {
     @Override
     public void start(Stage primaryStage) {
         stage = primaryStage;
+        primaryStage.setOnCloseRequest(event -> {
+            Platform.exit();
+            // to kill any existing threads
+            System.exit(0);
+        });
         makeScene1();
 
         stage.setScene(scene1);
@@ -70,10 +75,10 @@ public class App extends Application {
         scene1Grid.getRowConstraints().clear();
         scene1Grid.setGridLinesVisible(false);
 
-        scene1Grid.getColumnConstraints().add(new ColumnConstraints(480));
-        scene1Grid.getColumnConstraints().add(new ColumnConstraints(160));
-        scene1Grid.getColumnConstraints().add(new ColumnConstraints(160));
-        scene1Grid.getColumnConstraints().add(new ColumnConstraints(480));
+        scene1Grid.getColumnConstraints().add(new ColumnConstraints(450));
+        scene1Grid.getColumnConstraints().add(new ColumnConstraints(190));
+        scene1Grid.getColumnConstraints().add(new ColumnConstraints(190));
+        scene1Grid.getColumnConstraints().add(new ColumnConstraints(450));
 
         int row = 0;
         Label widthLabel = new Label("Width");
@@ -114,19 +119,19 @@ public class App extends Application {
         row += 1;
 
 
-        Label jungleRatioLabel = new Label("Jungle Ratio");
+        Label jungleRatioLabel = new Label("Jungle Ratio [0,1]");
         jungleRatioTextField = new TextField("0.3");
         scene1Grid.add(jungleRatioLabel, 1, row);
         scene1Grid.add(jungleRatioTextField, 2, row);
         row += 1;
 
-        Label delayLabel = new Label("Delay (ms)");
+        Label delayLabel = new Label("Delay (ms) (0, inf)");
         delayTextField = new TextField("100");
         scene1Grid.add(delayLabel, 1, row);
         scene1Grid.add(delayTextField, 2, row);
         row += 1;
 
-        Label startAnimalsNumberLabel = new Label("Number of animals on entry");
+        Label startAnimalsNumberLabel = new Label("Entry animals [10, inf)");
         startAnimalsNumberTextField = new TextField("10");
         scene1Grid.add(startAnimalsNumberLabel, 1, row);
         scene1Grid.add(startAnimalsNumberTextField, 2, row);
@@ -147,9 +152,6 @@ public class App extends Application {
         for (int i = 0; i < row; i++)
             scene1Grid.getRowConstraints().add(new RowConstraints(35));
 
-
-//        scene1Grid.setGridLinesVisible(true);
-
         scene1 = new Scene(scene1Grid, 1280, 720);
     }
 
@@ -162,10 +164,10 @@ public class App extends Application {
         int mapGridWidth = 450;
         int mapGridHeight = 450;
 
-        grid.getColumnConstraints().add(new ColumnConstraints(2*mapGridWidth));
-        grid.getColumnConstraints().add(new ColumnConstraints(scene2Width-2*mapGridWidth));
+        grid.getColumnConstraints().add(new ColumnConstraints(2 * mapGridWidth));
+        grid.getColumnConstraints().add(new ColumnConstraints(scene2Width - 2 * mapGridWidth));
         grid.getRowConstraints().add(new RowConstraints(mapGridHeight));
-        grid.getRowConstraints().add(new RowConstraints(scene2Height-mapGridHeight));
+        grid.getRowConstraints().add(new RowConstraints(scene2Height - mapGridHeight));
         grid.setGridLinesVisible(true);
 
         GridPane mapsGrid = new GridPane();
@@ -180,8 +182,8 @@ public class App extends Application {
         mapsGrid.add(unboundedGrid, 0, 0);
         mapsGrid.add(boundedGrid, 1, 0);
 
-        elemBoxWidth = ((double) mapGridWidth)/((double) width);
-        elemBoxHeight = ((double) mapGridHeight)/((double) height);
+        elemBoxWidth = ((double) mapGridWidth) / ((double) width);
+        elemBoxHeight = ((double) mapGridHeight) / ((double) height);
         setMapGridsConstraints();
 
         unboundedGrid.setGridLinesVisible(true);
@@ -200,13 +202,13 @@ public class App extends Application {
             unboundedGrid.getRowConstraints().add(new RowConstraints(elemBoxHeight));
             boundedGrid.getRowConstraints().add(new RowConstraints(elemBoxHeight));
         }
-        for(int i = 0; i < width; i++) {
+        for (int i = 0; i < width; i++) {
             unboundedGrid.getColumnConstraints().add(new ColumnConstraints(elemBoxWidth));
             boundedGrid.getColumnConstraints().add(new ColumnConstraints(elemBoxWidth));
         }
     }
 
-    void initWorldMapsAndEngines(){
+    void initWorldMapsAndEngines() {
         unboundedWorldMap = new WorldMap(width, height, false, moveEnergy, plantEnergy, reproductionEnergy, jungleRatio);
         unboundedWorldMap.makeInitialAnimals(startAnimalsNumber, startEnergy);
         unboundedEngine = new SimulationEngine(this, unboundedWorldMap, delay);
@@ -224,8 +226,7 @@ public class App extends Application {
         if (type == MapType.BOUNDED) {
             grid = boundedGrid;
             map = boundedWorldMap;
-        }
-        else {
+        } else {
             grid = unboundedGrid;
             map = unboundedWorldMap;
         }
@@ -236,10 +237,10 @@ public class App extends Application {
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
                 int x = i;
-                int y = height-j-1;
+                int y = height - j - 1;
                 IWorldMapElement elem = map.objectAt(new Vector2D(x, y));
                 if (elem != null) {
-                    GUIElemBox guiElemBox = new GUIElemBox(elem, elemBoxWidth, elemBoxHeight);
+                    GUIElemBox guiElemBox = new GUIElemBox(elem, elemBoxWidth, elemBoxHeight, moveEnergy);
                     grid.add(guiElemBox.getPane(), i, j);
                 }
             }
@@ -250,47 +251,76 @@ public class App extends Application {
         GridPane buttonsGrid = new GridPane();
         grid.add(buttonsGrid, 0, 1);
         for (int i = 0; i < 4; i++) {
-            buttonsGrid.getColumnConstraints().add(new ColumnConstraints((double) 2*mapGridWidth/4));
+            buttonsGrid.getColumnConstraints().add(new ColumnConstraints((double) 2 * mapGridWidth / 4));
         }
         for (int i = 0; i < 2; i++) {
-            buttonsGrid.getRowConstraints().add(new RowConstraints((double) (scene2Height-mapGridHeight)/2));
+            buttonsGrid.getRowConstraints().add(new RowConstraints((double) (scene2Height - mapGridHeight) / 2));
         }
 
-        Button unboundedStartButton = new Button("Start");
-        unboundedStartButton.setOnAction(event -> startUnboundedButtonAction());
+        Button unboundedStartButton = new Button("Play");
+        unboundedStartButton.setOnAction(event -> {
+            if (unboundedThread.getState() == Thread.State.NEW) {
+                unboundedThread.start();
+            }
+            unboundedEngine.resume();
+        });
         buttonsGrid.add(unboundedStartButton, 0, 0);
         GridPane.setHalignment(unboundedStartButton, HPos.CENTER);
         GridPane.setValignment(unboundedStartButton, VPos.CENTER);
 
+
         Button unboundedPauseButton = new Button("Pause");
-        unboundedPauseButton.setOnAction(event -> pauseUnboundedButtonAction());
+        unboundedPauseButton.setOnAction(event -> unboundedEngine.pause());
         buttonsGrid.add(unboundedPauseButton, 1, 0);
         GridPane.setHalignment(unboundedPauseButton, HPos.CENTER);
         GridPane.setValignment(unboundedPauseButton, VPos.CENTER);
 
-        Button boundedStartButton = new Button("Start");
-        boundedStartButton.setOnAction(event -> startBoundedButtonAction());
+
+        Button boundedStartButton = new Button("Play");
+        boundedStartButton.setOnAction(event -> {
+            if (boundedThread.getState() == Thread.State.NEW) {
+                boundedThread.start();
+            }
+            boundedEngine.resume();
+        });
         buttonsGrid.add(boundedStartButton, 2, 0);
         GridPane.setHalignment(boundedStartButton, HPos.CENTER);
         GridPane.setValignment(boundedStartButton, VPos.CENTER);
 
+
         Button boundedPauseButton = new Button("Pause");
-        boundedPauseButton.setOnAction(event -> pauseBoundedButtonAction());
+        boundedPauseButton.setOnAction(event -> boundedEngine.pause());
         buttonsGrid.add(boundedPauseButton, 3, 0);
         GridPane.setHalignment(boundedPauseButton, HPos.CENTER);
         GridPane.setValignment(boundedPauseButton, VPos.CENTER);
 
-        Button allStartButton = new Button("Start all");
-        allStartButton.setOnAction(event -> {allStartButtonAction();});
+
+        Button allStartButton = new Button("Play all");
+        allStartButton.setOnAction(event -> {
+            if (unboundedThread.getState() == Thread.State.NEW) {
+                unboundedThread.start();
+            }
+            unboundedEngine.resume();
+
+            if (boundedThread.getState() == Thread.State.NEW) {
+                boundedThread.start();
+            }
+            boundedEngine.resume();
+        });
         buttonsGrid.add(allStartButton, 1, 1);
         GridPane.setHalignment(allStartButton, HPos.CENTER);
         GridPane.setValignment(allStartButton, VPos.CENTER);
 
+
         Button allPauseButton = new Button("Pause all");
-        allPauseButton.setOnAction(event -> {allPauseButtonAction();});
+        allPauseButton.setOnAction(event -> {
+            unboundedEngine.pause();
+            boundedEngine.pause();
+        });
         buttonsGrid.add(allPauseButton, 2, 1);
         GridPane.setHalignment(allPauseButton, HPos.CENTER);
         GridPane.setValignment(allPauseButton, VPos.CENTER);
+
 
         Button setParametersButton = new Button("Set Parameters");
         setParametersButton.setOnAction(event -> setParametersButtonAction());
@@ -321,58 +351,31 @@ public class App extends Application {
                     jungleRatio <= 0 ||
                     jungleRatio > 1 ||
                     delay <= 0 ||
-                    startAnimalsNumber <= 0)
+                    startAnimalsNumber < 10 ||
+                    startAnimalsNumber > width * height*0.9)
                 throw new IllegalArgumentException();
 
             makeScene2();
             stage.setScene(scene2);
 
         } catch (NumberFormatException e) {
-            System.out.println("submitButtonAction: "+e.getMessage());
+            System.out.println("submitButtonAction: " + e.getMessage());
             errorLabel.setText("Your input is invalid. Please try again.");
         } catch (IllegalArgumentException e) {
             errorLabel.setText("Your argument is illegal. Check for negative values or ranges.");
         }
     }
 
-    public void startUnboundedButtonAction() {
-        switch (unboundedThread.getState()) {
-            case NEW -> unboundedThread.start();
-            case WAITING -> unboundedThread.notify();
-        }
-    }
-
-    public void startBoundedButtonAction() {
-        switch (boundedThread.getState()) {
-            case NEW -> boundedThread.start();
-            case WAITING -> unboundedThread.notify();
-        }
-    }
-
-    public void pauseUnboundedButtonAction() {
-    }
-
-    public void pauseBoundedButtonAction() {
-    }
-
-    public void allStartButtonAction() {
-        startBoundedButtonAction();
-        startUnboundedButtonAction();
-    }
-
-    public void allPauseButtonAction() {
-        pauseBoundedButtonAction();
-        pauseUnboundedButtonAction();
-    }
-
     public void setParametersButtonAction() {
         stage.setScene(scene1);
+        unboundedEngine.stop();
+        boundedEngine.stop();
     }
 
     public void update(MapType type) {
-        Platform.runLater(() -> {
-            refreshGrid(type);
-        });
+        Platform.runLater(() -> refreshGrid(type)
+        );
     }
+
 
 }
