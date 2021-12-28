@@ -6,6 +6,9 @@ import javafx.application.Platform;
 import javafx.geometry.HPos;
 import javafx.geometry.VPos;
 import javafx.scene.Scene;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
@@ -51,6 +54,7 @@ public class App extends Application {
     private TextField delayTextField;
     private TextField startAnimalsNumberTextField;
     private Label errorLabel;
+    private XYChart.Series<Number, Number> lifespanSeries;
 
 
     @Override
@@ -195,6 +199,7 @@ public class App extends Application {
         refreshGrid(MapType.BOUNDED);
 
         makeBottomButtons(grid, mapGridWidth, mapGridHeight);
+        makeChart(grid);
     }
 
     void setMapGridsConstraints() {
@@ -206,6 +211,25 @@ public class App extends Application {
             unboundedGrid.getColumnConstraints().add(new ColumnConstraints(elemBoxWidth));
             boundedGrid.getColumnConstraints().add(new ColumnConstraints(elemBoxWidth));
         }
+    }
+
+    void makeChart(GridPane grid) {
+        NumberAxis xAxis = new NumberAxis();
+        xAxis.setLabel("Day number");
+
+        NumberAxis yAxis = new NumberAxis();
+        yAxis.setLabel("Values");
+
+        LineChart<Number, Number> lineChart = new LineChart<Number, Number>(xAxis, yAxis);
+        lineChart.setTitle("Statistics");
+
+        lifespanSeries = new XYChart.Series();
+        lifespanSeries.setName("Avg unbounded lifespan");
+
+        lineChart.getData().add(lifespanSeries);
+
+        grid.add(lineChart, 1, 0);
+
     }
 
     void initWorldMapsAndEngines() {
@@ -372,9 +396,14 @@ public class App extends Application {
         boundedEngine.stop();
     }
 
-    public void update(MapType type) {
-        Platform.runLater(() -> refreshGrid(type)
-        );
+    public void update(MapType type) {Platform.runLater(() -> {
+        refreshGrid(type);
+        updateChart();
+    });
+    }
+
+    void updateChart() {
+        lifespanSeries.getData().add(new XYChart.Data<>(unboundedWorldMap.getDaysCount(), unboundedWorldMap.getAverageLifespan()));
     }
 
 

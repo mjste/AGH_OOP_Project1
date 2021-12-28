@@ -22,6 +22,7 @@ public class WorldMap implements IPositionChangeObserver{
     private final int plantEnergy;
     private final int reproductionEnergy;
 
+    private int daysCount;
     private int plantsCount;
     private int totalDeadCount;
     private int totalDeadLifespan;
@@ -50,6 +51,7 @@ public class WorldMap implements IPositionChangeObserver{
         jungleUpperRight = new Vector2D(upperRight.x-dx, upperRight.y-dy);
         this.plantsCount = 0;
         this.genomeMap = new HashMap<>();
+        this.daysCount = 0;
     }
 
     public WorldMap() {
@@ -68,6 +70,7 @@ public class WorldMap implements IPositionChangeObserver{
         initImages();
         this.plantsCount = 0;
         this.genomeMap = new HashMap<>();
+        this.daysCount = 0;
     }
 
     public void initAnimals(int width, int height) {
@@ -188,7 +191,7 @@ public class WorldMap implements IPositionChangeObserver{
             animal.move();
             animal.changeEnergy(-moveEnergy);
         }
-
+        daysCount++;
     }
 
     public void eatGrass() {
@@ -365,5 +368,9 @@ public class WorldMap implements IPositionChangeObserver{
         }
         if (animalList.size() != 0) return (double) totalChildren/animalList.size();
         return 0;
+    }
+
+    public int getDaysCount() {
+        return daysCount;
     }
 }
