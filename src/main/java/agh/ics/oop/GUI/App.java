@@ -54,7 +54,16 @@ public class App extends Application {
     private TextField delayTextField;
     private TextField startAnimalsNumberTextField;
     private Label errorLabel;
-    private XYChart.Series<Number, Number> lifespanSeries;
+    private XYChart.Series<Number, Number> unboundedLifespanSeries;
+    private XYChart.Series<Number, Number> boundedLifespanSeries;
+    private XYChart.Series<Number, Number> unboundedAnimalCountSeries;
+    private XYChart.Series<Number, Number> boundedAnimalCountSeries;
+    private XYChart.Series<Number, Number> unboundedPlantCountSeries;
+    private XYChart.Series<Number, Number> boundedPlantCountSeries;
+    private XYChart.Series<Number, Number> unboundedAvgEnergySeries;
+    private XYChart.Series<Number, Number> boundedAvgEnergySeries;
+    private XYChart.Series<Number, Number> unboundedAvgChildrenSeries;
+    private XYChart.Series<Number, Number> boundedAvgChildrenSeries;
 
 
     @Override
@@ -215,6 +224,7 @@ public class App extends Application {
 
     void makeChart(GridPane grid) {
         NumberAxis xAxis = new NumberAxis();
+        xAxis.setForceZeroInRange(false);
         xAxis.setLabel("Day number");
 
         NumberAxis yAxis = new NumberAxis();
@@ -223,13 +233,34 @@ public class App extends Application {
         LineChart<Number, Number> lineChart = new LineChart<Number, Number>(xAxis, yAxis);
         lineChart.setTitle("Statistics");
 
-        lifespanSeries = new XYChart.Series();
-        lifespanSeries.setName("Avg unbounded lifespan");
 
-        lineChart.getData().add(lifespanSeries);
+        unboundedLifespanSeries = new XYChart.Series<>();
+        unboundedLifespanSeries.setName("AvgUnLifespan");
+
+        boundedLifespanSeries = new XYChart.Series<>();
+        boundedLifespanSeries.setName("AvgBoLifespan");
+
+        unboundedAnimalCountSeries = new XYChart.Series<>();
+        unboundedAnimalCountSeries.setName("UnAniCount");
+
+        boundedAnimalCountSeries = new XYChart.Series<>();
+        boundedAnimalCountSeries.setName("BoAniCount");
+
+//        private XYChart.Series<Number, Number> unboundedPlantCountSeries;
+//        private XYChart.Series<Number, Number> boundedPlantCountSeries;
+//        private XYChart.Series<Number, Number> unboundedAvgEnergySeries;
+//        private XYChart.Series<Number, Number> boundedAvgEnergySeries;
+//        private XYChart.Series<Number, Number> unboundedAvgChildrenSeries;
+//        private XYChart.Series<Number, Number> boundedAvgChildrenSeries;
+
+
+
+        lineChart.getData().add(unboundedLifespanSeries);
+        lineChart.getData().add(boundedLifespanSeries);
+        lineChart.getData().add(unboundedAnimalCountSeries);
+        lineChart.getData().add(boundedAnimalCountSeries);
 
         grid.add(lineChart, 1, 0);
-
     }
 
     void initWorldMapsAndEngines() {
@@ -398,12 +429,24 @@ public class App extends Application {
 
     public void update(MapType type) {Platform.runLater(() -> {
         refreshGrid(type);
-        updateChart();
+        updateChart(type);
     });
     }
 
-    void updateChart() {
-        lifespanSeries.getData().add(new XYChart.Data<>(unboundedWorldMap.getDaysCount(), unboundedWorldMap.getAverageLifespan()));
+    void updateChart(MapType type) {
+        int maxSize = 2000;
+        int removeSize = (int) (0.02*maxSize);
+        if (type == MapType.UNBOUNDED) {
+            if (unboundedLifespanSeries.getData().size() > maxSize) unboundedLifespanSeries.getData().remove(0, removeSize);
+            unboundedLifespanSeries.getData().add(new XYChart.Data<>(unboundedWorldMap.getDaysCount(), unboundedWorldMap.getAverageLifespan()));
+            if (unboundedAnimalCountSeries.getData().size() > maxSize) unboundedAnimalCountSeries.getData().remove(0, removeSize);
+            unboundedAnimalCountSeries.getData().add(new XYChart.Data<>(unboundedWorldMap.getDaysCount(), unboundedWorldMap.getAnimalCount()));
+        } else {
+            if (boundedLifespanSeries.getData().size() > maxSize) boundedLifespanSeries.getData().remove(0, removeSize);
+            boundedLifespanSeries.getData().add(new XYChart.Data<>(boundedWorldMap.getDaysCount(), boundedWorldMap.getAverageLifespan()));
+            boundedAnimalCountSeries.getData().add(new XYChart.Data<>(boundedWorldMap.getDaysCount(), boundedWorldMap.getAnimalCount()));
+        }
+
     }
 
 

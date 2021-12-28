@@ -373,4 +373,8 @@ public class WorldMap implements IPositionChangeObserver{
     public int getDaysCount() {
         return daysCount;
     }
+
+    public int getAnimalCount() {
+        return animalList.size();
+    }
 }
