@@ -4,6 +4,8 @@ import agh.ics.oop.*;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.HPos;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.geometry.VPos;
 import javafx.scene.Scene;
 import javafx.scene.chart.LineChart;
@@ -12,10 +14,9 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.RowConstraints;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Paint;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
 public class App extends Application {
@@ -44,6 +45,7 @@ public class App extends Application {
     private double jungleRatio;
     private double elemBoxWidth;
     private double elemBoxHeight;
+    private Animal monitoredAnimal;
     private TextField widthTextField;
     private TextField heightTextField;
     private TextField startEnergyTextField;
@@ -54,6 +56,8 @@ public class App extends Application {
     private TextField delayTextField;
     private TextField startAnimalsNumberTextField;
     private Label errorLabel;
+    private Label unboundedGenomeLabel;
+    private Label boundedGenomeLabel;
     private XYChart.Series<Number, Number> unboundedLifespanSeries;
     private XYChart.Series<Number, Number> boundedLifespanSeries;
     private XYChart.Series<Number, Number> unboundedAnimalCountSeries;
@@ -199,8 +203,8 @@ public class App extends Application {
         elemBoxHeight = ((double) mapGridHeight) / ((double) height);
         setMapGridsConstraints();
 
-        unboundedGrid.setGridLinesVisible(true);
-        boundedGrid.setGridLinesVisible(true);
+//        unboundedGrid.setGridLinesVisible(true);
+//        boundedGrid.setGridLinesVisible(true);
 
         initWorldMapsAndEngines();
 
@@ -208,7 +212,8 @@ public class App extends Application {
         refreshGrid(MapType.BOUNDED);
 
         makeBottomButtons(grid, mapGridWidth, mapGridHeight);
-        makeChart(grid);
+//        makeCharts(grid);
+        makeStats(grid);
     }
 
     void setMapGridsConstraints() {
@@ -222,7 +227,47 @@ public class App extends Application {
         }
     }
 
-    void makeChart(GridPane grid) {
+    void makeStats(GridPane grid) {
+        VBox vBox = new VBox();
+        grid.add(vBox, 1, 0);
+        vBox.setAlignment(Pos.CENTER);
+
+        addChart(vBox);
+        addGenomeLabel(vBox);
+    }
+
+    void addGenomeLabel(VBox vBox) {
+        Label label = new Label("Most frequent genome");
+        vBox.getChildren().add(label);
+
+        HBox hBox1 = new HBox();
+        vBox.getChildren().add(hBox1);
+        hBox1.setAlignment(Pos.CENTER);
+
+        Label label1 = new Label("Unbounded map");
+        hBox1.getChildren().add(label1);
+        label1.setPadding(new Insets(2, 2, 2, 10));
+
+        Label label2 = new Label("Bounded map");
+        hBox1.getChildren().add(label2);
+        label2.setPadding(new Insets(2, 10, 2, 2));
+
+        HBox hBox2 = new HBox();
+        vBox.getChildren().add(hBox2);
+        hBox2.setAlignment(Pos.CENTER);
+
+        unboundedGenomeLabel = new Label();
+        hBox2.getChildren().add(unboundedGenomeLabel);
+        unboundedGenomeLabel.setPadding(new Insets(2, 10, 2, 2));
+        unboundedGenomeLabel.setFont(Font.font(10));
+
+        boundedGenomeLabel = new Label();
+        hBox2.getChildren().add(boundedGenomeLabel);
+        boundedGenomeLabel.setPadding(new Insets(2, 2, 2, 10));
+        boundedGenomeLabel.setFont(Font.font(10));
+    }
+
+    void addChart(VBox vBox) {
         NumberAxis xAxis = new NumberAxis();
         xAxis.setForceZeroInRange(false);
         xAxis.setLabel("Day number");
@@ -230,37 +275,55 @@ public class App extends Application {
         NumberAxis yAxis = new NumberAxis();
         yAxis.setLabel("Values");
 
-        LineChart<Number, Number> lineChart = new LineChart<Number, Number>(xAxis, yAxis);
+        LineChart<Number, Number> lineChart = new LineChart<>(xAxis, yAxis);
+
         lineChart.setTitle("Statistics");
 
-
+        // LIFESPAN
         unboundedLifespanSeries = new XYChart.Series<>();
-        unboundedLifespanSeries.setName("AvgUnLifespan");
+        unboundedLifespanSeries.setName("Average lifespan");
+        lineChart.getData().add(unboundedLifespanSeries);
 
         boundedLifespanSeries = new XYChart.Series<>();
-        boundedLifespanSeries.setName("AvgBoLifespan");
+        boundedLifespanSeries.setName("Average lifespan");
+        lineChart.getData().add(boundedLifespanSeries);
 
+        // ANIMAL COUNT
         unboundedAnimalCountSeries = new XYChart.Series<>();
-        unboundedAnimalCountSeries.setName("UnAniCount");
+        unboundedAnimalCountSeries.setName("Animal Count");
+        lineChart.getData().add(unboundedAnimalCountSeries);
 
         boundedAnimalCountSeries = new XYChart.Series<>();
-        boundedAnimalCountSeries.setName("BoAniCount");
-
-//        private XYChart.Series<Number, Number> unboundedPlantCountSeries;
-//        private XYChart.Series<Number, Number> boundedPlantCountSeries;
-//        private XYChart.Series<Number, Number> unboundedAvgEnergySeries;
-//        private XYChart.Series<Number, Number> boundedAvgEnergySeries;
-//        private XYChart.Series<Number, Number> unboundedAvgChildrenSeries;
-//        private XYChart.Series<Number, Number> boundedAvgChildrenSeries;
-
-
-
-        lineChart.getData().add(unboundedLifespanSeries);
-        lineChart.getData().add(boundedLifespanSeries);
-        lineChart.getData().add(unboundedAnimalCountSeries);
+        boundedAnimalCountSeries.setName("Animal Count");
         lineChart.getData().add(boundedAnimalCountSeries);
 
-        grid.add(lineChart, 1, 0);
+        // PLANT COUNT
+        unboundedPlantCountSeries = new XYChart.Series<>();
+        unboundedPlantCountSeries.setName("Plant Count");
+        lineChart.getData().add(unboundedPlantCountSeries);
+
+        boundedPlantCountSeries = new XYChart.Series<>();
+        boundedPlantCountSeries.setName("Plant count");
+        lineChart.getData().add(boundedPlantCountSeries);
+
+
+        unboundedAvgEnergySeries = new XYChart.Series<>();
+        unboundedAvgEnergySeries.setName("Average energy");
+        lineChart.getData().add(unboundedAvgEnergySeries);
+
+        boundedAvgEnergySeries = new XYChart.Series<>();
+        boundedAvgEnergySeries.setName("Average energy");
+        lineChart.getData().add(boundedAvgEnergySeries);
+
+        unboundedAvgChildrenSeries = new XYChart.Series<>();
+        unboundedAvgChildrenSeries.setName("Average children");
+        lineChart.getData().add(unboundedAvgChildrenSeries);
+
+        boundedAvgChildrenSeries = new XYChart.Series<>();
+        boundedAvgChildrenSeries.setName("Average children");
+        lineChart.getData().add(boundedAvgChildrenSeries);
+
+        vBox.getChildren().add(lineChart);
     }
 
     void initWorldMapsAndEngines() {
@@ -287,15 +350,15 @@ public class App extends Application {
         }
 
         grid.getChildren().clear();
-        grid.setGridLinesVisible(false);
-        grid.setGridLinesVisible(true);
+//        grid.setGridLinesVisible(false);
+//        grid.setGridLinesVisible(true);
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
                 int x = i;
                 int y = height - j - 1;
                 IWorldMapElement elem = map.objectAt(new Vector2D(x, y));
                 if (elem != null) {
-                    GUIElemBox guiElemBox = new GUIElemBox(elem, elemBoxWidth, elemBoxHeight, moveEnergy);
+                    GUIElemBox guiElemBox = new GUIElemBox(this, elem, type, elemBoxWidth, elemBoxHeight, moveEnergy);
                     grid.add(guiElemBox.getPane(), i, j);
                 }
             }
@@ -427,27 +490,55 @@ public class App extends Application {
         boundedEngine.stop();
     }
 
-    public void update(MapType type) {Platform.runLater(() -> {
+    synchronized public void update(MapType type) {Platform.runLater(() -> {
         refreshGrid(type);
         updateChart(type);
+        updateGenomeLabel(type);
     });
     }
 
+    public void updateGenomeLabel(MapType type) {
+        if (type == MapType.BOUNDED) boundedGenomeLabel.setText(boundedWorldMap.getMostCommonGenome().toString());
+        else unboundedGenomeLabel.setText(unboundedWorldMap.getMostCommonGenome().toString());
+    }
+
     void updateChart(MapType type) {
-        int maxSize = 2000;
+        int maxSize = 500;
         int removeSize = (int) (0.02*maxSize);
         if (type == MapType.UNBOUNDED) {
             if (unboundedLifespanSeries.getData().size() > maxSize) unboundedLifespanSeries.getData().remove(0, removeSize);
             unboundedLifespanSeries.getData().add(new XYChart.Data<>(unboundedWorldMap.getDaysCount(), unboundedWorldMap.getAverageLifespan()));
             if (unboundedAnimalCountSeries.getData().size() > maxSize) unboundedAnimalCountSeries.getData().remove(0, removeSize);
             unboundedAnimalCountSeries.getData().add(new XYChart.Data<>(unboundedWorldMap.getDaysCount(), unboundedWorldMap.getAnimalCount()));
+            if (unboundedPlantCountSeries.getData().size() > maxSize) unboundedPlantCountSeries.getData().remove(0, removeSize);
+            unboundedPlantCountSeries.getData().add(new XYChart.Data<>(unboundedWorldMap.getDaysCount(), unboundedWorldMap.getPlantsCount()));
+            if (unboundedAvgEnergySeries.getData().size() > maxSize) unboundedAvgEnergySeries.getData().remove(0, removeSize);
+            unboundedAvgEnergySeries.getData().add(new XYChart.Data<>(unboundedWorldMap.getDaysCount(), unboundedWorldMap.getAverageEnergy()));
+            if (unboundedAvgChildrenSeries.getData().size() > maxSize) unboundedAvgChildrenSeries.getData().remove(0, removeSize);
+            unboundedAvgChildrenSeries.getData().add(new XYChart.Data<>(unboundedWorldMap.getDaysCount(), unboundedWorldMap.getAverageChildren()));
         } else {
             if (boundedLifespanSeries.getData().size() > maxSize) boundedLifespanSeries.getData().remove(0, removeSize);
             boundedLifespanSeries.getData().add(new XYChart.Data<>(boundedWorldMap.getDaysCount(), boundedWorldMap.getAverageLifespan()));
+            if (boundedAnimalCountSeries.getData().size() > maxSize) boundedAnimalCountSeries.getData().remove(0, removeSize);
             boundedAnimalCountSeries.getData().add(new XYChart.Data<>(boundedWorldMap.getDaysCount(), boundedWorldMap.getAnimalCount()));
+            if (boundedPlantCountSeries.getData().size() > maxSize) boundedPlantCountSeries.getData().remove(0, removeSize);
+            boundedPlantCountSeries.getData().add(new XYChart.Data<>(boundedWorldMap.getDaysCount(), boundedWorldMap.getPlantsCount()));
+            if (boundedAvgEnergySeries.getData().size() > maxSize) boundedAvgEnergySeries.getData().remove(0, removeSize);
+            boundedAvgEnergySeries.getData().add(new XYChart.Data<>(boundedWorldMap.getDaysCount(), boundedWorldMap.getAverageEnergy()));
+            if (boundedAvgChildrenSeries.getData().size() > maxSize) boundedAvgChildrenSeries.getData().remove(0, removeSize);
+            boundedAvgChildrenSeries.getData().add(new XYChart.Data<>(boundedWorldMap.getDaysCount(), boundedWorldMap.getAverageChildren()));
         }
-
     }
 
+    void setMonitoredAnimal(Animal animal) {
+        this.monitoredAnimal = animal;
+    }
 
+    boolean enginePaused(MapType type) {
+        if (type == MapType.BOUNDED) {
+            return boundedEngine.isPaused();
+        } else {
+            return unboundedEngine.isPaused();
+        }
+    }
 }

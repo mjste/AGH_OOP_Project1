@@ -377,4 +377,16 @@ public class WorldMap implements IPositionChangeObserver{
     public int getAnimalCount() {
         return animalList.size();
     }
+
+    public Genome getMostCommonGenome() {
+        int maxCount = 0;
+        Genome genome = null;
+        for (Map.Entry<Genome, Integer> entry : genomeMap.entrySet()) {
+            if (entry.getValue() > maxCount) {
+                maxCount = entry.getValue();
+                genome = entry.getKey();
+            }
+        }
+        return genome;
+    }
 }

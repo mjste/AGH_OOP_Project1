@@ -12,7 +12,12 @@ public class Genome {
 
     @Override
     public String toString() {
-        return Arrays.toString(genes);
+        StringBuilder string = new StringBuilder();
+        for (int i = 0; i < 32; i++) {
+            string.append(Integer.toString(genes[i]));
+        }
+        return string.toString();
+//        return Arrays.toString(genes);
     }
 
     @Override

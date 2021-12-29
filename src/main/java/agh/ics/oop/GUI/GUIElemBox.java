@@ -2,6 +2,7 @@ package agh.ics.oop.GUI;
 
 import agh.ics.oop.Animal;
 import agh.ics.oop.IWorldMapElement;
+import agh.ics.oop.MapType;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
 
@@ -9,8 +10,14 @@ import java.io.FileNotFoundException;
 
 public class GUIElemBox {
     private final Pane pane;
+    private final IWorldMapElement iWorldMapElement;
+    private final App app;
+    private final MapType type;
 
-    public GUIElemBox(IWorldMapElement element, double width, double height, int moveEnergy) {
+    public GUIElemBox(App app, IWorldMapElement element, MapType type, double width, double height, int moveEnergy) {
+        this.app = app;
+        this.iWorldMapElement = element;
+        this.type = type;
         pane = new Pane();
         pane.setPrefSize(width, height);
 
@@ -22,6 +29,10 @@ public class GUIElemBox {
             String style = "-fx-background-color: #ff"+color+color;
             pane.setStyle(style);
             height = 0.9*height;
+
+            pane.setOnMouseClicked(event -> {
+                setAppMonitoredAnimal();
+            });
         }
 
         try {
@@ -38,5 +49,10 @@ public class GUIElemBox {
 
     public Pane getPane() {
         return pane;
+    }
+
+    private void setAppMonitoredAnimal() {
+        if (app.enginePaused(type))
+            app.setMonitoredAnimal((Animal) iWorldMapElement);
     }
 }

@@ -63,4 +63,8 @@ public class SimulationEngine implements Runnable {
     public void stop() {
         stopped = true;
     }
+
+    public boolean isPaused() {
+        return paused;
+    }
 }
